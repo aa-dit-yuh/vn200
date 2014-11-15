@@ -8,7 +8,7 @@ find_package(catkin REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
+	find_package(Threads REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -91,9 +91,11 @@ catkin_package(
 include_directories(include)
 
 ## Declare a cpp library
-#add_library(vn200
-#   src/vn200.c src/vndevice.c
-#)
+add_library(vn200
+   	src/vn200.c
+	src/vndevice.c
+	src/arch/linux/vncp_services.c
+)
 
 ## Declare a cpp executable
 add_executable(vn200_node
@@ -108,9 +110,10 @@ add_executable(vn200_node
 # add_dependencies(vn200_node vn200_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(vn200_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(vn200_node
+   ${catkin_LIBRARIES}
+   ${CMAKE_THREAD_LIBS_INIT}
+)
 
 #############
 ## Install ##
