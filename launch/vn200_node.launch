@@ -1,5 +1,3 @@
 <launch>
-	<node name="vn200_node" pkg="vn200" type="vn200_node" />
+	<node name="vn200_node" pkg="vn200" type="vn200_node" output="screen" />
 </launch>
-
-	
