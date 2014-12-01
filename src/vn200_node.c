@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include <unistd.h>
 #include <vectornav.h>
 /* Change the connection settings to your configuration. */
@@ -35,8 +36,53 @@ int main()
 		printf("Error encountered when trying to connect to the sensor.\n");
 		return 0;
 	}
-	
-	for (i = 0; i < 100; i++) {
+
+	double avg[3];
+	double sd[3];
+	avg[0]=avg[1]=avg[2]=0;
+	sd[0]=sd[1]=sd[2]=0;
+
+	for(i = 1; i <= 100; i++){
+		vn200_getQuaternion(
+			&vn200,
+			&attitude);
+
+		b.c0 = 2 * (attitude.y * attitude.w - attitude.x * attitude.z);
+		b.c1 = 2 * (attitude.x * attitude.y + attitude.z * attitude.w);
+		b.c2 = attitude.x * attitude.x - attitude.y * attitude.y - attitude.z * attitude.z + attitude.w * attitude.w;
+
+		vn200_setAccelerationCompensation(
+			&vn200,
+			c,
+			b,
+			true);
+
+		errorCode= vn200_getAcceleration(
+			&vn200,
+			&acc);
+
+		avg[0]+= acc.c0;
+		avg[1]+= acc.c1;
+		avg[2]+= acc.c2;
+		sd[0]+= fabs(acc.c0 - avg[0]/i);
+		sd[1]+= fabs(acc.c1 - avg[1]/i);
+		sd[2]+= fabs(acc.c2 - avg[2]/i);
+		usleep(10000);
+	}
+	avg[0]/=100;
+	avg[1]/=100;
+	avg[2]/=100;
+	sd[0]/=100;
+	sd[1]/=100;
+	sd[2]/=100;
+
+	printf("Averages:	%lf %lf %lf\n",avg[0],avg[1],avg[2]);
+	printf("Standard deviations:%lf %lf %lf\n",sd[0],sd[1],sd[2]);
+
+	FILE * gnuplotPipe = popen ("gnuplot -persistent", "w");
+	fprintf(gnuplotPipe, "plot '-' \n");
+
+	for (i = 0; i < 1000; i++) {
 
 		/* The library is handling and storing asynchronous data by itself.
 		   Calling this function retrieves the most recently processed
@@ -45,22 +91,21 @@ int main()
 			&vn200,
 			&attitude);
 
-		printf("IMU Solution:\n"
-			"  Quaternion.x:           %+#7.2f\n"
-			"  Quaternion.y:           %+#7.2f\n"
-			"  Quaternion.z:           %+#7.2f\n"
-			"  Quaternion.w:           %+#7.2f\n",
-			attitude.x,
-			attitude.y,
-			attitude.z,
-			attitude.w);
+		// printf("IMU Solution:\n"
+		// 	"  Quaternion.x:           %+#7.2f\n"
+		// 	"  Quaternion.y:           %+#7.2f\n"
+		// 	"  Quaternion.z:           %+#7.2f\n"
+		// 	"  Quaternion.w:           %+#7.2f\n",
+		// 	attitude.x,
+		// 	attitude.y,
+		// 	attitude.z,
+		// 	attitude.w);
 
-		b.c0 = 2 * (attitude.y * attitude.w - attitude.x * attitude.z);
-		b.c1 = 2 * (attitude.x * attitude.y + attitude.z * attitude.w);
-		b.c2 = attitude.x * attitude.x - attitude.y * attitude.y - attitude.z * attitude.z + attitude.w * attitude.w;
+		b.c0 = 2 * (attitude.y * attitude.w - attitude.x * attitude.z) - (b.c0>avg[0]? sd[0]:(-1*sd[0]));
+		b.c1 = 2 * (attitude.x * attitude.y + attitude.z * attitude.w) - (b.c1>avg[1]? sd[1]:(-1*sd[1]));
+		b.c2 = attitude.x * attitude.x - attitude.y * attitude.y - attitude.z * attitude.z + attitude.w * attitude.w + avg[2] - (b.c2>avg[2]? sd[2]:(-1*sd[2]));
 
-
-		printf("%lf %lf %lf\n",b.c0,b.c1,b.c2);
+		// printf("%lf %lf %lf\n",b.c0,b.c1,b.c2);
 
 		vn200_setAccelerationCompensation(
 			&vn200,
@@ -68,30 +113,20 @@ int main()
 			b,
 			true);
 
-		vn200_getQuaternionMagneticAccelerationAngularRate(
+		errorCode= vn200_getAcceleration(
 			&vn200,
-			&attitude,
-			&mag,
-		 	&acc,
-			&angRate);
+		 	&acc);
 
 		printf("IMU Solution:\n"
-			"  Quaternion.x:           %+#7.2f\n"
-			"  Quaternion.y:           %+#7.2f\n"
-			"  Quaternion.z:           %+#7.2f\n"
-			"  Quaternion.w:           %+#7.2f\n"
 			"  Acceleration.x:         %+#7.2f\n"
 			"  Acceleration.y:         %+#7.2f\n"
 			"  Acceleration.z:         %+#7.2f\n",
-			attitude.x,
-			attitude.y,
-			attitude.z,
-			attitude.w,
 			acc.c0,
 			acc.c1,
 			acc.c2);
 
-		sleep(1);
+		usleep(10000);
+		fprintf(gnuplotPipe, "%d %lf\n", i, acc.c2 + g);
 	}
 	
 	
@@ -102,29 +137,3 @@ int main()
 	}
 return 0;
 }
-
-
-// void asyncDataListener(void* sender, VnDeviceCompositeData* data)
-// {
-// 	VnVector3 b;
-// 	VnMatrix3x3 c;
-// 	c.c00=c.c11=c.c22=1;
-// 	c.c01=c.c02=c.c10=c.c12=c.c20=c.c21=0;	
-// 	b.c0 = 2 * (data->quaternion.y * data->quaternion.w - data->quaternion.x * data->quaternion.z);
-// 	b.c1 = 2 * (data->quaternion.x * data->quaternion.y + data->quaternion.z * data->quaternion.w);
-// 	b.c2 = data->quaternion.x * data->quaternion.x - data->quaternion.y * data->quaternion.y - data->quaternion.z * data->quaternion.z + data->quaternion.w * data->quaternion.w;
-
-
-// 	printf("%lf %lf %lf\n",b.c0,b.c1,b.c2);
-
-// 	vn200_setAccelerationCompensation(
-// 		&vn200,
-// 		c,
-// 		b,
-// 		true);
-
-
-
-// 	printf("\n\n");
-// }
-
