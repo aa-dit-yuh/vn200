@@ -31,8 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "vn100.h"
-#include "vn_errorCodes.h"
+#include <vn100.h>
+#include <vn_errorCodes.h>
 
 /* Defines and constants. ****************************************************/
 

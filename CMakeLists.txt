@@ -93,7 +93,7 @@ include_directories(include)
 ## Declare a cpp library
 add_library(vn200
    	src/vn200.c
-	src/vndevice.c
+   	src/vndevice.c
 	src/arch/linux/vncp_services.c
 )
 
