@@ -39,9 +39,7 @@ int main()
 	}
 
 	double avg[3];
-	double sd[3];
 	avg[0]=avg[1]=avg[2]=0;
-	sd[0]=sd[1]=sd[2]=0;
 
 	for(i = 1; i <= 100; i++){
 		vn200_getQuaternion(
@@ -75,48 +73,26 @@ int main()
 		avg[0]+= acc.c0;
 		avg[1]+= acc.c1;
 		avg[2]+= acc.c2;
-		sd[0]+= fabs(acc.c0 - avg[0]/i);
-		sd[1]+= fabs(acc.c1 - avg[1]/i);
-		sd[2]+= fabs(acc.c2 - avg[2]/i);
 		usleep(10000);
 	}
 	avg[0]/=100;
 	avg[1]/=100;
 	avg[2]/=100;
-	sd[0]/=100;
-	sd[1]/=100;
-	sd[2]/=100;
 
 	printf("Averages:	%lf %lf %lf\n",avg[0],avg[1],avg[2]);
-	printf("Standard deviations:%lf %lf %lf\n",sd[0],sd[1],sd[2]);
 
 	FILE * p = fopen("data.dat","w");
-	// FILE * gnuplotPipe = popen ("gnuplot -persistent", "w");
 
 	for (i = 0; i < 100; i++) {
 
-		/* The library is handling and storing asynchronous data by itself.
-		   Calling this function retrieves the most recently processed
-		   asynchronous data packet. */
 		vn200_getQuaternion(
 			&vn200,
 			&attitude);
 
-		// printf("IMU Solution:\n"
-		// 	"  Quaternion.x:           %+#7.2f\n"
-		// 	"  Quaternion.y:           %+#7.2f\n"
-		// 	"  Quaternion.z:           %+#7.2f\n"
-		// 	"  Quaternion.w:           %+#7.2f\n",
-		// 	attitude.x,
-		// 	attitude.y,
-		// 	attitude.z,
-		// 	attitude.w);
-
-		b.c0 = 2 * (attitude.x * attitude.z - attitude.w * attitude.y) +avg[0];
-		b.c1 = 2 * (attitude.w * attitude.x + attitude.y * attitude.z) +avg[1];
+		b.c0 = 2 * (attitude.x * attitude.z - attitude.w * attitude.y) + avg[0];
+		b.c1 = 2 * (attitude.w * attitude.x + attitude.y * attitude.z) + avg[1];
 		b.c2 = attitude.w * attitude.w - attitude.x * attitude.x - attitude.y * attitude.y + attitude.z * attitude.z + avg[2];
 
-		// printf("%lf %lf %lf\n",b.c0,b.c1,b.c2);
 		c.c00 = attitude.w*attitude.w + attitude.x*attitude.x - attitude.y*attitude.y - attitude.z*attitude.z;
 		c.c01 = 2*(attitude.x*attitude.y + attitude.w*attitude.z);
 		c.c02 = 2*(attitude.x*attitude.z - attitude.y*attitude.w);
@@ -143,18 +119,16 @@ int main()
 			"  Acceleration.z:         %+#7.2f\n",
 			acc.c0,
 			acc.c1,
-			acc.c2);
+			acc.c2 - g);
 
 		usleep(10000);
 		fprintf(p,"%d %lf %lf %lf\n", i, acc.c0, acc.c1, acc.c2 - g);
 	}
-	// fprintf(gnuplotPipe, "plot '~/.ros/data.dat' using 1:2 title 'x' with lines, '~/.ros/data.dat' using 1:3 title 'y' with lines, '~/.ros/data.dat' using 1:4 title 'z' with lines \n");
-	// fclose(gnuplotPipe);
 	fclose(p);
 	errorCode = vn200_disconnect(&vn200);
 	if (errorCode != VNERR_NO_ERROR){
 	printf("Error encountered when trying to disconnect from the sensor.\n");
 	return 0;
 	}
-return 0;
+	return 0;
 }
