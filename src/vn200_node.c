@@ -20,7 +20,8 @@ int main()
 	VnVector3 acc,mag,angRate,b;
 	VnMatrix3x3 c;
 	c.c00=c.c11=c.c22=1;
-	c.c01=c.c02=c.c10=c.c12=c.c20=c.c21=0;	
+	c.c01=c.c02=c.c10=c.c12=c.c20=c.c21=0;
+	b.c0=b.c1=b.c2=0;
 	
 	errorCode = vn200_connect(
 		&vn200,
@@ -106,6 +107,15 @@ int main()
 		b.c2 = attitude.x * attitude.x - attitude.y * attitude.y - attitude.z * attitude.z + attitude.w * attitude.w + avg[2] - (b.c2>avg[2]? sd[2]:(-1*sd[2]));
 
 		// printf("%lf %lf %lf\n",b.c0,b.c1,b.c2);
+		c.c00 = attitude.w*attitude.w + attitude.x*attitude.x - attitude.y*attitude.y - attitude.z*attitude.z;
+		c.c01 = 2*(attitude.x*attitude.y + attitude.w*attitude.z);
+		c.c02 = 2*(attitude.x*attitude.z - attitude.y*attitude.w);
+		c.c10 = 2*(attitude.x*attitude.y - attitude.w*attitude.z);
+		c.c11 = attitude.w*attitude.w - attitude.x*attitude.x + attitude.y*attitude.y - attitude.z*attitude.z;
+		c.c12 = 2*(attitude.y*attitude.z + attitude.w*attitude.x);
+		c.c20 = 2*(attitude.x*attitude.z + attitude.w*attitude.y);
+		c.c12 = 2*(attitude.y*attitude.z - attitude.w*attitude.x);
+		c.c22 = attitude.w*attitude.w - attitude.x*attitude.x - attitude.y*attitude.y + attitude.z*attitude.z;
 
 		vn200_setAccelerationCompensation(
 			&vn200,
@@ -126,7 +136,7 @@ int main()
 			acc.c2);
 
 		usleep(10000);
-		fprintf(gnuplotPipe, "%d %lf\n", i, acc.c2 + g);
+		fprintf(gnuplotPipe,"%d %lf\n %lf %lf", i, acc.c0, acc.c1, acc.c2 - g );
 	}
 	
 	
