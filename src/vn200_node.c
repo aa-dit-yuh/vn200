@@ -48,9 +48,19 @@ int main()
 			&vn200,
 			&attitude);
 
-		b.c0 = 2 * (attitude.y * attitude.w - attitude.x * attitude.z);
-		b.c1 = 2 * (attitude.x * attitude.y + attitude.z * attitude.w);
-		b.c2 = attitude.x * attitude.x - attitude.y * attitude.y - attitude.z * attitude.z + attitude.w * attitude.w;
+		b.c0 = 2 * (attitude.x * attitude.z - attitude.w * attitude.y);
+		b.c1 = 2 * (attitude.w * attitude.x + attitude.y * attitude.z);
+		b.c2 = attitude.w * attitude.w - attitude.x * attitude.x - attitude.y * attitude.y + attitude.z * attitude.z;
+
+		c.c00 = attitude.w*attitude.w + attitude.x*attitude.x - attitude.y*attitude.y - attitude.z*attitude.z;
+		c.c01 = 2*(attitude.x*attitude.y + attitude.w*attitude.z);
+		c.c02 = 2*(attitude.x*attitude.z - attitude.y*attitude.w);
+		c.c10 = 2*(attitude.x*attitude.y - attitude.w*attitude.z);
+		c.c11 = attitude.w*attitude.w - attitude.x*attitude.x + attitude.y*attitude.y - attitude.z*attitude.z;
+		c.c12 = 2*(attitude.y*attitude.z + attitude.w*attitude.x);
+		c.c20 = 2*(attitude.x*attitude.z + attitude.w*attitude.y);
+		c.c12 = 2*(attitude.y*attitude.z - attitude.w*attitude.x);
+		c.c22 = attitude.w*attitude.w - attitude.x*attitude.x - attitude.y*attitude.y + attitude.z*attitude.z;
 
 		vn200_setAccelerationCompensation(
 			&vn200,
@@ -80,10 +90,10 @@ int main()
 	printf("Averages:	%lf %lf %lf\n",avg[0],avg[1],avg[2]);
 	printf("Standard deviations:%lf %lf %lf\n",sd[0],sd[1],sd[2]);
 
-	FILE * gnuplotPipe = popen ("gnuplot -persistent", "w");
-	fprintf(gnuplotPipe, "plot '-' \n");
+	FILE * p = fopen("data.dat","w");
+	// FILE * gnuplotPipe = popen ("gnuplot -persistent", "w");
 
-	for (i = 0; i < 1000; i++) {
+	for (i = 0; i < 100; i++) {
 
 		/* The library is handling and storing asynchronous data by itself.
 		   Calling this function retrieves the most recently processed
@@ -102,9 +112,9 @@ int main()
 		// 	attitude.z,
 		// 	attitude.w);
 
-		b.c0 = 2 * (attitude.y * attitude.w - attitude.x * attitude.z) - (b.c0>avg[0]? sd[0]:(-1*sd[0]));
-		b.c1 = 2 * (attitude.x * attitude.y + attitude.z * attitude.w) - (b.c1>avg[1]? sd[1]:(-1*sd[1]));
-		b.c2 = attitude.x * attitude.x - attitude.y * attitude.y - attitude.z * attitude.z + attitude.w * attitude.w + avg[2] - (b.c2>avg[2]? sd[2]:(-1*sd[2]));
+		b.c0 = 2 * (attitude.x * attitude.z - attitude.w * attitude.y) +avg[0];
+		b.c1 = 2 * (attitude.w * attitude.x + attitude.y * attitude.z) +avg[1];
+		b.c2 = attitude.w * attitude.w - attitude.x * attitude.x - attitude.y * attitude.y + attitude.z * attitude.z + avg[2];
 
 		// printf("%lf %lf %lf\n",b.c0,b.c1,b.c2);
 		c.c00 = attitude.w*attitude.w + attitude.x*attitude.x - attitude.y*attitude.y - attitude.z*attitude.z;
@@ -136,10 +146,11 @@ int main()
 			acc.c2);
 
 		usleep(10000);
-		fprintf(gnuplotPipe,"%d %lf\n %lf %lf", i, acc.c0, acc.c1, acc.c2 - g );
+		fprintf(p,"%d %lf %lf %lf\n", i, acc.c0, acc.c1, acc.c2 - g);
 	}
-	
-	
+	// fprintf(gnuplotPipe, "plot '~/.ros/data.dat' using 1:2 title 'x' with lines, '~/.ros/data.dat' using 1:3 title 'y' with lines, '~/.ros/data.dat' using 1:4 title 'z' with lines \n");
+	// fclose(gnuplotPipe);
+	fclose(p);
 	errorCode = vn200_disconnect(&vn200);
 	if (errorCode != VNERR_NO_ERROR){
 	printf("Error encountered when trying to disconnect from the sensor.\n");
