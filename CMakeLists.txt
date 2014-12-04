@@ -99,7 +99,7 @@ add_library(vn200
 
 ## Declare a cpp executable
 add_executable(vn200_node
-					src/vn200_node.c
+					src/vn200_node.cpp
 					src/vn200.c
 					src/vndevice.c
 					src/arch/linux/vncp_services.c
