@@ -4,7 +4,7 @@ project(vn200)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED roscpp)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -99,6 +99,7 @@ add_library(vn200
 
 ## Declare a cpp executable
 add_executable(vn200_node
+					src/vn200_publisher.cpp
 					src/vn200_node.cpp
 					src/vn200.c
 					src/vndevice.c
